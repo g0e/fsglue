@@ -3,7 +3,7 @@ from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from datetime import datetime
 import json
 import copy
-from .exceptions import FirestoreGlueProgrammingError, FirestoreGlueValidationError
+from .exceptions import FsglueProgrammingError, FsglueValidationError
 
 
 class BaseProperty(object):
@@ -65,16 +65,16 @@ class BaseProperty(object):
 
     def _validate(self, value):
         if self.choices is not None and value not in self.choices:
-            raise FirestoreGlueValidationError(
+            raise FsglueValidationError(
                 "{0} not found in choices".format(value))
         if self.required and value is None:
-            raise FirestoreGlueValidationError(
+            raise FsglueValidationError(
                 "{0} is required".format(self._name))
         if self.schema:
             try:
                 jsonschema.validate(value, self.schema)
             except JsonSchemaValidationError as e:
-                raise FirestoreGlueValidationError(str(e))
+                raise FsglueValidationError(str(e))
         if self.validator:
             # invalidな場合はvalidatorの中からValidationErrorをraiseする仕様
             self.validator(value)
@@ -279,7 +279,7 @@ class ComputedProperty(BaseProperty):
         if self.schema:
             return self.schema
         else:
-            raise FirestoreGlueProgrammingError("schema must be specified")
+            raise FsglueProgrammingError("schema must be specified")
 
 
 class ConstantProperty(BaseProperty):
@@ -304,4 +304,4 @@ class ConstantProperty(BaseProperty):
         if self.schema:
             return self.schema
         else:
-            raise FirestoreGlueProgrammingError("schema must be specified")
+            raise FsglueProgrammingError("schema must be specified")

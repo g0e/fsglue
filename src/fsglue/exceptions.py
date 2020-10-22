@@ -1,12 +1,12 @@
 
-class FirestoreGlueException(Exception):
+class FsglueException(Exception):
     """BaseException"""
     pass
 
 
-class FirestoreGlueValidationError(FirestoreGlueException):
+class FsglueValidationError(FsglueException):
     pass
 
 
-class FirestoreGlueProgrammingError(FirestoreGlueException):
+class FsglueProgrammingError(FsglueException):
     pass

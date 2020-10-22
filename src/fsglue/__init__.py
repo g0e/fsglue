@@ -1,12 +1,13 @@
 # flake8: noqa
 
-__version__ = '0.1.0'
+__version__ = '0.1.2'
 
 from .client import initialize
 
 from .model import BaseModel
 
 from .property import (
+    BaseProperty,
     StringProperty,
     IntegerProperty,
     FloatProperty,
@@ -18,6 +19,7 @@ from .property import (
 )
 
 from .exceptions import (
-    FirestoreGlueValidationError,
-    FirestoreGlueProgrammingError
+    FsglueException,
+    FsglueProgrammingError,
+    FsglueValidationError
 )

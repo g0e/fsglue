@@ -1,6 +1,6 @@
 # inspired by https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/master/ndb/model.py
 from .client import get_client
-from .exceptions import FirestoreGlueValidationError
+from .exceptions import FsglueValidationError
 import re
 from .property import BaseProperty
 
@@ -120,7 +120,7 @@ class BaseModel(object, metaclass=MetaModel):
     def _validate_doc_id(cls, doc_id):
         if cls.ID_VALIDATION_PATTERN:
             if not re.match(cls.ID_VALIDATION_PATTERN, doc_id):
-                raise FirestoreGlueValidationError("invalid id: {0}".format(doc_id))
+                raise FsglueValidationError("invalid id: {0}".format(doc_id))
 
     def _validate(self):
         "_proppertiesを元にvalidationを行う。invalidな場合はValidationErrorをraiseする"
@@ -239,7 +239,7 @@ class BaseModel(object, metaclass=MetaModel):
     def update_by_dict(cls, values, *parent_ids, exclude=[], only=None, without_put=False):
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
-            raise FirestoreGlueValidationError(cls.DICT_ID_KEY + " not found")
+            raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
         new_values = cls._filter_values(values, exclude=exclude, only=only)
         obj = cls.get_by_id(doc_id, *parent_ids)
         obj.from_dict(new_values)
@@ -254,7 +254,7 @@ class BaseModel(object, metaclass=MetaModel):
     def upsert_by_dict(cls, values, *parent_ids, exclude=[], only=None, without_put=False):
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
-            raise FirestoreGlueValidationError(cls.DICT_ID_KEY + " not found")
+            raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
         if cls.exists(doc_id, *parent_ids):
             return cls.update_by_dict(values, *parent_ids, exclude=exclude, only=only, without_put=without_put)
         else:
