@@ -1,0 +1,22 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+flake8 = "*"
+tox = "*"
+coverage = "*"
+
+[packages]
+google-cloud-firestore = "*"
+jsonschema = "*"
+
+[requires]
+python_version = ">=3.6"
+
+[pipenv]
+allow_prereleases = true
+
+[scripts]
+run-emulator = 'gcloud beta emulators firestore start --project test --host-port "localhost:8001"'

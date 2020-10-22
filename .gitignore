@@ -1,0 +1,4 @@
+.vscode
+.tox
+.coverage
+*.egg-info
