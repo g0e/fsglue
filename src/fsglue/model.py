@@ -6,7 +6,6 @@ from .property import BaseProperty
 
 
 class MetaModel(type):
-
     def __init__(cls, name, bases, classdict):
         super(MetaModel, cls).__init__(name, bases, classdict)
         cls._fix_up_properties()
@@ -16,6 +15,7 @@ class BaseModel(object, metaclass=MetaModel):
     """
     BaseModel
     """
+
     COLLECTION_PATH = None  # ex: category/{0}/group/{1}/page
     COLLECTION_PATH_PARAMS = []  # ex: ["category_id", "group_id"]
     DICT_ID_KEY = "id"
@@ -173,7 +173,9 @@ class BaseModel(object, metaclass=MetaModel):
 
     def delete(self):
         if self.is_deletable() and self.before_delete():
-            get_client().collection(self._get_col_path()).document(self._doc_id).delete()
+            get_client().collection(self._get_col_path()).document(
+                self._doc_id
+            ).delete()
             self.after_delete()
 
     def delete_all(self):
@@ -196,7 +198,12 @@ class BaseModel(object, metaclass=MetaModel):
 
     @classmethod
     def get_by_id(cls, doc_id, *parent_ids):
-        doc = get_client().collection(cls._get_col_path_by_ids(*parent_ids)).document(doc_id).get()
+        doc = (
+            get_client()
+            .collection(cls._get_col_path_by_ids(*parent_ids))
+            .document(doc_id)
+            .get()
+        )
         if doc.exists:
             obj = cls(doc.id, *parent_ids)
             obj._from_db_dict(doc.to_dict())
@@ -218,10 +225,18 @@ class BaseModel(object, metaclass=MetaModel):
 
     @classmethod
     def exists(cls, doc_id, *parent_ids):
-        return get_client().collection(cls._get_col_path_by_ids(*parent_ids)).document(doc_id).get().exists
+        return (
+            get_client()
+            .collection(cls._get_col_path_by_ids(*parent_ids))
+            .document(doc_id)
+            .get()
+            .exists
+        )
 
     @classmethod
-    def create_by_dict(cls, values, *parent_ids, exclude=[], only=None, without_put=False):
+    def create_by_dict(
+        cls, values, *parent_ids, exclude=[], only=None, without_put=False
+    ):
         doc_id = values.get(cls.DICT_ID_KEY)
         if doc_id:
             cls._validate_doc_id(doc_id)
@@ -236,7 +251,9 @@ class BaseModel(object, metaclass=MetaModel):
         return obj
 
     @classmethod
-    def update_by_dict(cls, values, *parent_ids, exclude=[], only=None, without_put=False):
+    def update_by_dict(
+        cls, values, *parent_ids, exclude=[], only=None, without_put=False
+    ):
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
             raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
@@ -251,14 +268,20 @@ class BaseModel(object, metaclass=MetaModel):
         return obj
 
     @classmethod
-    def upsert_by_dict(cls, values, *parent_ids, exclude=[], only=None, without_put=False):
+    def upsert_by_dict(
+        cls, values, *parent_ids, exclude=[], only=None, without_put=False
+    ):
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
             raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
         if cls.exists(doc_id, *parent_ids):
-            return cls.update_by_dict(values, *parent_ids, exclude=exclude, only=only, without_put=without_put)
+            return cls.update_by_dict(
+                values, *parent_ids, exclude=exclude, only=only, without_put=without_put
+            )
         else:
-            return cls.create_by_dict(values, *parent_ids, exclude=exclude, only=only, without_put=without_put)
+            return cls.create_by_dict(
+                values, *parent_ids, exclude=exclude, only=only, without_put=without_put
+            )
 
     @classmethod
     def _filter_values(cls, values, exclude=[], only=None):
@@ -282,7 +305,30 @@ class BaseModel(object, metaclass=MetaModel):
         return parent_ids
 
     @classmethod
-    def where(cls, conds, *parent_ids, to_dict=False, order_by=None, limit=100, offset=None, collection_id=None):
+    def where(
+        cls,
+        conds,
+        *parent_ids,
+        to_dict=False,
+        order_by=None,
+        limit=100,
+        offset=None,
+        collection_id=None
+    ):
+        """Fetch documents which match the conditions.
+
+        Args:
+            conds (list[]): List of search conditions. Each condition must be list of [`field`, `operator`, `value`]. Each condition is passed to firestore .where() method.
+            *parent_ids (list[str]): List of parent_id defined by `COLLECTION_PATH_PARAMS`
+            to_dict (bool): Return list of dict instead of model instance if set True.
+            order_by (str): Property name to sort the results. Add "-" prefix if descending order, like "-price".
+            limit (int): Number of max documents.
+            offset (int): Number of offset to fetch the documents.
+            collection_id (str): Set collection name to search by collection_group. If collection_id is specified, parent_ids are ignored.
+        Returns:
+            list: instances or dicts of the model
+        """
+
         if collection_id:
             # collection group の機能を使ってquery投げる場合
             # https://github.com/googleapis/google-cloud-python/blob/4fd18c8aef86c287f50780036c0751f965c6e227/firestore/google/cloud/firestore_v1/client.py#L198
@@ -321,6 +367,19 @@ class BaseModel(object, metaclass=MetaModel):
         return results
 
     @classmethod
+    def all(cls, *parent_ids, **kwargs):
+        """Fetch all documents.
+
+        Args:
+            *parent_ids: Same as `where()`
+            **kwargs: Same as `where()`
+
+        Returns:
+            list: instances of the model
+        """
+        return cls.where([], *parent_ids, **kwargs)
+
+    @classmethod
     def stream(cls, *parent_ids, conds=[], collection_id=None):
         "whereとallのgenerator版(メモリ節約版)"
         if collection_id:
@@ -339,8 +398,4 @@ class BaseModel(object, metaclass=MetaModel):
             else:
                 obj = cls(doc.id, *parent_ids)
             obj._from_db_dict(doc.to_dict())
-            yield(obj)
-
-    @classmethod
-    def all(cls, *parent_ids, **kwargs):
-        return cls.where([], *parent_ids, **kwargs)
+            yield (obj)

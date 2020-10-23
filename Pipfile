@@ -7,16 +7,18 @@ verify_ssl = true
 flake8 = "*"
 tox = "*"
 coverage = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+sphinx-autobuild = "*"
 
 [packages]
 google-cloud-firestore = "*"
 jsonschema = "*"
 
-[requires]
-python_version = ">=3.6"
-
 [pipenv]
 allow_prereleases = true
 
 [scripts]
-run-emulator = 'gcloud beta emulators firestore start --project test --host-port "localhost:8001"'
+tox = "tox"
+fs-emulator = 'gcloud beta emulators firestore start --project test --host-port "localhost:8001"'
+sphinx-autobuild = "sphinx-autobuild docs source/_build --watch ."
