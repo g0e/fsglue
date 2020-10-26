@@ -21,4 +21,4 @@ allow_prereleases = true
 [scripts]
 tox = "tox"
 fs-emulator = 'gcloud beta emulators firestore start --project test --host-port "localhost:8001"'
-sphinx-autobuild = "sphinx-autobuild docs source/_build --watch ."
+sphinx-autobuild = "sphinx-autobuild docs-src docs --watch ."
