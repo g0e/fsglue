@@ -7,6 +7,7 @@ from .client import initialize
 from .model import BaseModel
 
 from .property import (
+    PropertySpecialValue,
     BaseProperty,
     StringProperty,
     IntegerProperty,

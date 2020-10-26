@@ -1,5 +1,5 @@
 class FsglueException(Exception):
-    """Common base Exception"""
+    """Common base exception"""
 
     pass
 

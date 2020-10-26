@@ -1,16 +1,19 @@
-.. src documentation master file, created by
-   sphinx-quickstart on Fri Oct 23 21:53:18 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+:github_url: https://github.com/g0e/fsglue
 
-Welcome to src's documentation!
+
+
+Welcome to fsglue's documentation!
 ===============================
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
    :caption: Contents:
 
-   fsglue
+   intro
+   client
+   model
+   property
+   exception
 
 
 Indices and tables

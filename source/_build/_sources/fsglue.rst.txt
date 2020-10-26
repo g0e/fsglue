@@ -1,45 +1,66 @@
 fsglue package
 ==============
 
-Submodules
-----------
-
-fsglue.client module
+Client
 --------------------
 
-.. automodule:: fsglue.client
+.. automethod:: fsglue.client.initialize
+
+
+Model
+-------------------
+
+.. autoclass:: fsglue.model.BaseModel
    :members:
    :undoc-members:
    :show-inheritance:
 
-fsglue.exceptions module
+Property
+----------------------
+
+.. autoclass:: fsglue.property.BaseProperty
+   :members:
+   :special-members: __init__
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.StringProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.IntegerProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.FloatProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.BooleanProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.TimestampProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.JsonProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.ComputedProperty
+   :special-members: __init__
+   :show-inheritance:
+
+.. autoclass:: fsglue.property.ConstantProperty
+   :special-members: __init__
+   :show-inheritance:
+
+
+Exceptions
 ------------------------
 
 .. automodule:: fsglue.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-fsglue.model module
--------------------
-
-.. automodule:: fsglue.model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-fsglue.property module
-----------------------
-
-.. automodule:: fsglue.property
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: fsglue
    :members:
    :undoc-members:
    :show-inheritance:

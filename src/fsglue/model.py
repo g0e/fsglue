@@ -12,8 +12,37 @@ class MetaModel(type):
 
 
 class BaseModel(object, metaclass=MetaModel):
-    """
-    BaseModel
+    """BaseModel
+
+
+    Examples:
+        .. code-block:: python
+
+            import fsglue
+
+            class Fruit(fsglue.BaseModel):
+
+                COLLECTION_PATH = "fruit"
+                COLLECTION_PATH_PARAMS = []
+
+                name = fsglue.StringProperty(required=True)
+                price = fsglue.IntegerProperty(required=True)
+
+            # create
+            apple = Fruit.create_by_dict({"name": "apple", "price": 100})
+
+            # read
+            apple = Fruit.get_by_id(apple.doc_id)
+            apple = Fruit.where([[name, "==", "apple"]])[0]
+
+            # update
+            values = fetched_apple.to_dict()
+            values["price"] = 110
+            Fruit.update_by_dict(values)
+            fetched_apple = Fruit.get_by_id(fetched_apple.doc_id)
+            # delete
+            fetched_apple.delete()
+
     """
 
     COLLECTION_PATH = None  # ex: category/{0}/group/{1}/page
@@ -45,36 +74,13 @@ class BaseModel(object, metaclass=MetaModel):
     def _get_col_path_by_ids(cls, *parent_ids):
         return cls.COLLECTION_PATH.format(*parent_ids)
 
-    @classmethod
-    def to_schema(cls):
-        """
-        generate json schema definition
-        """
-        required = []
-        props = {
-            "id": {
-                "type": "string",
-            }
-        }
-        for k in cls._properties.keys():
-            prop = cls._properties[k]
-            if prop.required:
-                required.append(prop._name)
-            props[prop._name] = prop._get_schema()
-        required.sort()
-        schema = {
-            "required": required,
-            "type": "object",
-            "properties": props,
-        }
-        return schema
-
     @property
     def doc_id(self):
         return self._doc_id
 
     def to_dict(self, get_intact=False):
-        """cast to dict
+        """Return dict values of instance propeties
+
         Args:
             get_intact (bool): if True return values before local change
         Returns:
@@ -88,7 +94,7 @@ class BaseModel(object, metaclass=MetaModel):
         return values
 
     def _to_db_dict(self, exclude=[], only=None):
-        "firestoreに保存する用のdictを取得して返却する"
+        "Generate dict for firestore"
         values = {}
         for k in self._properties.keys():
             if only and k not in only:
@@ -101,14 +107,18 @@ class BaseModel(object, metaclass=MetaModel):
             values[k] = prop._get_db_value(self)
         return values
 
-    def from_dict(self, values={}):
-        "アプリからdictでmodelに値を保存する"
+    def _from_dict(self, values={}):
+        """Update instance values by dict
+
+        Args:
+            values (dict): new values
+        """
         for k in self._properties.keys():
             if k in values:
                 self._properties[k]._set_app_value(self, values[k])
 
     def _from_db_dict(self, values={}):
-        "firestoreのdictからmodelに値を保存する"
+        """Update instance values by firestore values"""
         for k in self._properties.keys():
             prop = self._properties[k]
             if prop.is_virtual:
@@ -117,132 +127,39 @@ class BaseModel(object, metaclass=MetaModel):
                 prop._set_db_value(self, values[k])
 
     @classmethod
-    def _validate_doc_id(cls, doc_id):
-        if cls.ID_VALIDATION_PATTERN:
-            if not re.match(cls.ID_VALIDATION_PATTERN, doc_id):
-                raise FsglueValidationError("invalid id: {0}".format(doc_id))
+    def create(cls, *parent_ids):
+        """Create new model instance
 
-    def _validate(self):
-        "_proppertiesを元にvalidationを行う。invalidな場合はValidationErrorをraiseする"
-        for k in self._properties.keys():
-            prop = self._properties[k]
-            if hasattr(prop, "_get_validate_value"):
-                value = prop._get_validate_value(self)
-            else:
-                value = prop._get_app_value(self)
-            prop._validate(value)
+        Args:
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
 
-    def validate(self):
-        "必要に応じて継承先クラスで定義する。invalidな場合はValidationErrorをraiseする"
-        pass
-
-    def before_put(self, **kwargs):
-        "更新前にhookする時に使う"
-        # createかupdateは self._doc_id の有無で確認
-        return True
-
-    def put(self, exclude=[], only=None, **kwargs):
-        self._validate()
-        self.validate()
-        if self.before_put(**kwargs):
-            db_dict = self._to_db_dict(exclude=exclude, only=only)
-            coll_ref = get_client().collection(self._get_col_path())
-            if self._doc_id:
-                if len(exclude) > 0 or only:
-                    coll_ref.document(self._doc_id).update(db_dict)
-                else:
-                    # replace処理になるので含まれていないフィールドは削除される
-                    coll_ref.document(self._doc_id).set(db_dict)
-                self.after_put(False, **kwargs)
-            else:
-                _, doc_ref = coll_ref.add(db_dict)
-                self._doc_id = doc_ref.id
-                self.after_put(True, **kwargs)
-
-    def after_put(self, created, **kwargs):
-        "更新後にhookする時に使う"
-        pass
-
-    def is_deletable(self):
-        "依存関係的に削除できるかどうかをチェックして、削除できない場合はValidationErrorをraiseする"
-        return True
-
-    def before_delete(self):
-        "削除前にhookする時に使う。Falseを返すと削除しない"
-        return True
-
-    def delete(self):
-        if self.is_deletable() and self.before_delete():
-            get_client().collection(self._get_col_path()).document(
-                self._doc_id
-            ).delete()
-            self.after_delete()
-
-    def delete_all(self):
-        "subscollectionも含めて再帰的に削除"
-        if self.is_deletable() and self.before_delete():
-            doc = get_client().collection(self._get_col_path()).document(self._doc_id)
-            self._delete_doc_recursive(doc)
-            self.after_delete()
-
-    @classmethod
-    def _delete_doc_recursive(cls, doc):
-        for collection in doc.collections():
-            for child_doc in collection.list_documents():
-                cls._delete_doc_recursive(child_doc)
-        doc.delete()
-
-    def after_delete(self):
-        "削除後にhookする時に使う"
-        pass
-
-    @classmethod
-    def get_by_id(cls, doc_id, *parent_ids):
-        doc = (
-            get_client()
-            .collection(cls._get_col_path_by_ids(*parent_ids))
-            .document(doc_id)
-            .get()
-        )
-        if doc.exists:
-            obj = cls(doc.id, *parent_ids)
-            obj._from_db_dict(doc.to_dict())
-            return obj
-        return None
-
-    @classmethod
-    def get_by_ids(cls, doc_ids, *parent_ids):
-        if len(doc_ids) == 0:
-            return []
-        coll = get_client().collection(cls._get_col_path_by_ids(*parent_ids))
-        doc_refs = [coll.document(doc_id) for doc_id in doc_ids]
-        objs = []
-        for doc in get_client().get_all(doc_refs):
-            obj = cls(doc.id, *parent_ids)
-            obj._from_db_dict(doc.to_dict())
-            objs.append(obj)
-        return objs
-
-    @classmethod
-    def exists(cls, doc_id, *parent_ids):
-        return (
-            get_client()
-            .collection(cls._get_col_path_by_ids(*parent_ids))
-            .document(doc_id)
-            .get()
-            .exists
-        )
+        Returns:
+            obj: model instance
+        """
+        return cls(None, *parent_ids)
 
     @classmethod
     def create_by_dict(
         cls, values, *parent_ids, exclude=[], only=None, without_put=False
     ):
+        """Create new firestore document by dict values, and return model instance.
+
+        Args:
+            values (dict): Model properties values.
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+            exclude (list[str], optional): If specified, save property not listed.
+            only (list[str], optional): If specified, save property only listed.
+            without_put (bool): If True, do not save on firestore but create instance.
+
+        Returns:
+            obj: model instance
+        """
         doc_id = values.get(cls.DICT_ID_KEY)
         if doc_id:
             cls._validate_doc_id(doc_id)
         doc_values = cls._filter_values(values, exclude=exclude, only=only)
         obj = cls(doc_id, *parent_ids)
-        obj.from_dict(doc_values)
+        obj._from_dict(doc_values)
         if not without_put:
             obj.put()
         else:
@@ -251,15 +168,33 @@ class BaseModel(object, metaclass=MetaModel):
         return obj
 
     @classmethod
+    def _validate_doc_id(cls, doc_id):
+        if cls.ID_VALIDATION_PATTERN:
+            if not re.match(cls.ID_VALIDATION_PATTERN, doc_id):
+                raise FsglueValidationError("invalid id: {0}".format(doc_id))
+
+    @classmethod
     def update_by_dict(
         cls, values, *parent_ids, exclude=[], only=None, without_put=False
     ):
+        """Update firestore document by dict values, and return model instance.
+
+        Args:
+            values (dict): Model properties values. Must contain :attr:`DICT_ID_KEY` field.
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+            exclude (list[str], optional): If specified, save property not listed.
+            only (list[str], optional): If specified, save property only listed.
+            without_put (bool): If True, do not save on firestore but update instance.
+
+        Returns:
+            obj: model instance
+        """
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
             raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
         new_values = cls._filter_values(values, exclude=exclude, only=only)
         obj = cls.get_by_id(doc_id, *parent_ids)
-        obj.from_dict(new_values)
+        obj._from_dict(new_values)
         if not without_put:
             obj.put(exclude=exclude, only=only)
         else:
@@ -271,6 +206,18 @@ class BaseModel(object, metaclass=MetaModel):
     def upsert_by_dict(
         cls, values, *parent_ids, exclude=[], only=None, without_put=False
     ):
+        """Create or update firestore document by dict values, and return model instance.
+
+        Args:
+            values (dict): Model properties values. Must contain :attr:`DICT_ID_KEY` field.
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+            exclude (list[str], optional): If specified, save property not listed.
+            only (list[str], optional): If specified, save property only listed.
+            without_put (bool): If True, do not save on firestore.
+
+        Returns:
+            obj: model instance
+        """
         doc_id = values.get(cls.DICT_ID_KEY)
         if not doc_id:
             raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
@@ -297,12 +244,175 @@ class BaseModel(object, metaclass=MetaModel):
 
     @classmethod
     def _parent_ids_from_path(cls, path):
-        # parent_ids を path から抽出する(collection_groupの時に使う)
+        # extract parent_ids from path (used in collection_group feature)
         parent_ids = []
         for key, value in zip(cls.COLLECTION_PATH.split("/"), path.split("/")):
             if key.startswith("{") and key.endswith("}"):
                 parent_ids.append(value)
         return parent_ids
+
+    def _validate(self):
+        """Do validate by _properties._validate"""
+        for k in self._properties.keys():
+            prop = self._properties[k]
+            if hasattr(prop, "_get_validate_value"):
+                value = prop._get_validate_value(self)
+            else:
+                value = prop._get_app_value(self)
+            prop._validate(value, self)
+
+    def validate(self):
+        """Validate model instance. Raise Exception if invalid"""
+        pass
+
+    @classmethod
+    def exists(cls, doc_id, *parent_ids):
+        """Return the document exists or not by doc_id.
+
+        Args:
+            doc_id (str): Document id
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+        Returns:
+            bool: True if exists else False
+        """
+        return (
+            get_client()
+            .collection(cls._get_col_path_by_ids(*parent_ids))
+            .document(doc_id)
+            .get()
+            .exists
+        )
+
+    @classmethod
+    def get_by_id(cls, doc_id, *parent_ids):
+        """Fetch document from firestore by doc_id
+
+        Args:
+            doc_id (str): Document id
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+        Returns:
+            obj: model instance
+        """
+        doc = (
+            get_client()
+            .collection(cls._get_col_path_by_ids(*parent_ids))
+            .document(doc_id)
+            .get()
+        )
+        if doc.exists:
+            obj = cls(doc.id, *parent_ids)
+            obj._from_db_dict(doc.to_dict())
+            return obj
+        return None
+
+    @classmethod
+    def get_by_ids(cls, doc_ids, *parent_ids):
+        """Fetch documents from firestore by doc_ids
+
+        Args:
+            doc_ids (list[str]): List of document id
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
+        Returns:
+            list: list of model instance
+        """
+        if len(doc_ids) == 0:
+            return []
+        coll = get_client().collection(cls._get_col_path_by_ids(*parent_ids))
+        doc_refs = [coll.document(doc_id) for doc_id in doc_ids]
+        objs = []
+        for doc in get_client().get_all(doc_refs):
+            obj = cls(doc.id, *parent_ids)
+            obj._from_db_dict(doc.to_dict())
+            objs.append(obj)
+        return objs
+
+    def put(self, exclude=[], only=None, **kwargs):
+        """Save instance values to firestore
+
+        If :attr:`doc_id` is `None`, create new Document.
+        If :attr:`doc_id` is not `None`, update existing Document.
+
+        Args:
+            exclude (list[str], optional): If specified, save property not listed.
+            only (list[str], optional): If specified, save property only listed.
+            **kwargs: extra arguments pass to before_put, after_put
+        """
+        self._validate()
+        self.validate()
+        if self.before_put(**kwargs):
+            db_dict = self._to_db_dict(exclude=exclude, only=only)
+            coll_ref = get_client().collection(self._get_col_path())
+            if self._doc_id:
+                if len(exclude) > 0 or only:
+                    coll_ref.document(self._doc_id).update(db_dict)
+                else:
+                    # [memo] .set will remove all fields not in db_dict
+                    coll_ref.document(self._doc_id).set(db_dict)
+                self.after_put(False, **kwargs)
+            else:
+                _, doc_ref = coll_ref.add(db_dict)
+                self._doc_id = doc_ref.id
+                self.after_put(True, **kwargs)
+
+    def before_put(self, **kwargs):
+        """Hook before :func:`put` and return whether continue to put or not
+
+        Returns:
+            bool: whether continue to put or not
+        """
+        # createかupdateは self._doc_id の有無で確認
+        return True
+
+    def after_put(self, created, **kwargs):
+        """Hook after :func:`put` succeeded.
+
+        Args:
+            created (bool, optional): True if  :func:`put` created new document else False
+            **kwargs: extra arguments passed from :func:`put`
+        """
+        pass
+
+    def delete(self):
+        """Delete document in firestore"""
+        if self.is_deletable() and self.before_delete():
+            get_client().collection(self._get_col_path()).document(
+                self._doc_id
+            ).delete()
+            self.after_delete()
+
+    def is_deletable(self):
+        """Determine whether continue to :func:`delete` or not.
+
+        Returns:
+            bool: continue to :func:`delete` or not
+        """
+        return True
+
+    def before_delete(self):
+        """Hook before :func:`delete` and return whether continue to :func:`delete` or not.
+
+        Returns:
+            bool: continue to :func:`delete` or not
+        """
+        return True
+
+    def after_delete(self):
+        """Hook after :func:`delete` succeeded."""
+        pass
+
+    def delete_all(self):
+        """Delete document and subcollection recursively"""
+        if self.is_deletable() and self.before_delete():
+            doc = get_client().collection(self._get_col_path()).document(self._doc_id)
+            self._delete_doc_recursive(doc)
+            self.after_delete()
+
+    @classmethod
+    def _delete_doc_recursive(cls, doc):
+        for collection in doc.collections():
+            for child_doc in collection.list_documents():
+                cls._delete_doc_recursive(child_doc)
+        doc.delete()
 
     @classmethod
     def where(
@@ -319,7 +429,7 @@ class BaseModel(object, metaclass=MetaModel):
 
         Args:
             conds (list[]): List of search conditions. Each condition must be list of [`field`, `operator`, `value`]. Each condition is passed to firestore .where() method.
-            *parent_ids (list[str]): List of parent_id defined by `COLLECTION_PATH_PARAMS`
+            *parent_ids (list[str]): List of parent_id defined by :attr:`COLLECTION_PATH_PARAMS`
             to_dict (bool): Return list of dict instead of model instance if set True.
             order_by (str): Property name to sort the results. Add "-" prefix if descending order, like "-price".
             limit (int): Number of max documents.
@@ -330,7 +440,6 @@ class BaseModel(object, metaclass=MetaModel):
         """
 
         if collection_id:
-            # collection group の機能を使ってquery投げる場合
             # https://github.com/googleapis/google-cloud-python/blob/4fd18c8aef86c287f50780036c0751f965c6e227/firestore/google/cloud/firestore_v1/client.py#L198
             docs = get_client().collection_group(collection_id)
         else:
@@ -338,7 +447,7 @@ class BaseModel(object, metaclass=MetaModel):
         for field, operator, value in conds:
             prop = cls._properties.get(field)
             if prop:
-                value = prop.to_db_value(value)
+                value = prop.to_db_search_value(value)
             docs = docs.where(field, operator, value)
         if order_by:
             for order_by_cond in order_by.split(","):
@@ -371,9 +480,8 @@ class BaseModel(object, metaclass=MetaModel):
         """Fetch all documents.
 
         Args:
-            *parent_ids: Same as `where()`
-            **kwargs: Same as `where()`
-
+            *parent_ids: Same as :func:`where`
+            **kwargs: Same as :func:`where`
         Returns:
             list: instances of the model
         """
@@ -381,7 +489,15 @@ class BaseModel(object, metaclass=MetaModel):
 
     @classmethod
     def stream(cls, *parent_ids, conds=[], collection_id=None):
-        "whereとallのgenerator版(メモリ節約版)"
+        """Generator for all documents.
+
+        Args:
+            *parent_ids: Same as :func:`where`
+            conds (list[]): Same as :func:`where`
+            collection_id (str): Same as :func:`where`
+        Returns:
+            generator: yield instances of the model
+        """
         if collection_id:
             docs = get_client().collection_group(collection_id)
         else:
@@ -389,7 +505,7 @@ class BaseModel(object, metaclass=MetaModel):
         for field, operator, value in conds:
             prop = cls._properties.get(field)
             if prop:
-                value = prop.to_db_value(value)
+                value = prop.to_db_search_value(value)
             docs = docs.where(field, operator, value)
         for doc in docs.stream():
             if collection_id:
@@ -399,3 +515,29 @@ class BaseModel(object, metaclass=MetaModel):
                 obj = cls(doc.id, *parent_ids)
             obj._from_db_dict(doc.to_dict())
             yield (obj)
+
+    @classmethod
+    def to_schema(cls):
+        """Generate JsonSchema definition for the model
+
+        Returns:
+            dict: JsonSchema definition
+        """
+        required = []
+        props = {
+            "id": {
+                "type": "string",
+            }
+        }
+        for k in cls._properties.keys():
+            prop = cls._properties[k]
+            if prop.required:
+                required.append(prop._name)
+            props[prop._name] = prop._get_schema()
+        required.sort()
+        schema = {
+            "required": required,
+            "type": "object",
+            "properties": props,
+        }
+        return schema
