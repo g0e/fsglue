@@ -1,9 +1,16 @@
 :github_url: https://github.com/g0e/fsglue
 
 
+========================================
+fsglue API Reference
+========================================
 
-Welcome to fsglue's documentation!
-===============================
+Summary
+==================
+
+This is API Reference of fsglue.
+Please see `README on Github <https://github.com/g0e/fsglue>`_ about usage overview.
+
 
 .. toctree::
    :maxdepth: 1

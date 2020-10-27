@@ -1,6 +1,6 @@
 # inspired by https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/master/ndb/model.py
 from .client import get_client
-from .exceptions import FsglueValidationError
+from .exceptions import FsglueValidationError, FsglueDocumentNotFound
 import re
 from .property import BaseProperty
 
@@ -194,6 +194,8 @@ class BaseModel(object, metaclass=MetaModel):
             raise FsglueValidationError(cls.DICT_ID_KEY + " not found")
         new_values = cls._filter_values(values, exclude=exclude, only=only)
         obj = cls.get_by_id(doc_id, *parent_ids)
+        if not obj:
+            raise FsglueDocumentNotFound()
         obj._from_dict(new_values)
         if not without_put:
             obj.put(exclude=exclude, only=only)

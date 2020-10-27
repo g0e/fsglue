@@ -14,3 +14,9 @@ class FsglueProgrammingError(FsglueException):
     """Error caused by misuse of fsglue"""
 
     pass
+
+
+class FsglueDocumentNotFound(FsglueException):
+    """Error caused by absence of target document"""
+
+    pass
