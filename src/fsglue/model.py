@@ -54,7 +54,7 @@ class BaseModel(object, metaclass=MetaModel):
     @classmethod
     def _fix_up_properties(cls):
         cls._properties = {}
-        for name in set(dir(cls)):
+        for name in cls.__dict__.keys():
             prop = getattr(cls, name, None)
             if isinstance(prop, BaseProperty):
                 prop._fix_up(cls, name)
@@ -538,8 +538,8 @@ class BaseModel(object, metaclass=MetaModel):
             props[prop._name] = prop._get_schema()
         required.sort()
         schema = {
-            "required": required,
             "type": "object",
+            "required": required,
             "properties": props,
         }
         return schema

@@ -173,7 +173,7 @@ class BaseProperty(object):
             raise FsglueValidationError("{0} not found in choices".format(value))
         if self.required and value is None:
             raise FsglueValidationError("{0} is required".format(self._name))
-        if self.schema:
+        if self.schema and value is not None:
             try:
                 jsonschema.validate(value, self.schema)
             except JsonSchemaValidationError as e:
@@ -323,7 +323,66 @@ class TimestampProperty(BaseProperty):
 
 
 class JsonProperty(BaseProperty):
-    """Can store dict or list value for application and firestore."""
+    """Can store dict or list value for application and firestore.
+    
+    Examples:
+        .. code-block:: python
+
+            import fsglue
+
+            ITEMS_SCHEMA = {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "required": ["name", "price", "cnt"],
+                    "additionalProperties": False,
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                        },
+                        "price": {
+                            "type": "number",
+                        },
+                        "cnt": {
+                            "type": "number",
+                        },
+                    },
+                },
+            }
+
+            COUPON_SCHEMA = {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["coupon_id", "coupon_name", "condition"],
+                "properties": {
+                    "coupon_id": {
+                        "type": "string",
+                    },
+                    "coupon_name": {
+                        "type": "string",
+                    },
+                    "condition": {"type": "object", "additionalProperties": True},
+                },
+            }
+
+            class Purchase(fsglue.BaseModel):
+                COLLECTION_PATH = "purchase"
+                COLLECTION_PATH_PARAMS = []
+
+                items = fsglue.JsonProperty(schema=ITEMS_SCHEMA, default=[], required=True)
+                coupon = fsglue.JsonProperty(schema=COUPON_SCHEMA, default=None)
+
+            # create
+            purchase = Purchase.create()
+            purchase.items = [{"name": "apple", "price": 100, "cnt": 1}]
+            purchase.coupon = {
+                "coupon_id": "test",
+                "coupon_name": "time sale 10% off",
+                "condition": {"discount_rate": 0.9},
+            }
+            purchase.put()
+    """
 
     def __init__(self, store_as_string=False, **kwargs):
         """Constructor
@@ -357,13 +416,31 @@ class JsonProperty(BaseProperty):
 
 
 class ComputedProperty(BaseProperty):
-    """Can store computed value from other property values."""
+    """Can store computed value from other property values.
+
+    Examples:
+        .. code-block:: python
+
+            import fsglue
+
+            def calc_sum(obj):
+                return obj.num1 + obj.num2
+
+            class TestModel(fsglue.BaseModel):
+                COLLECTION_PATH = "test"
+                COLLECTION_PATH_PARAMS = []
+
+                num1 = fsglue.IntegerProperty(required=True)
+                num2 = fsglue.IntegerProperty(required=True)
+                sum = fsglue.ComputedProperty(computer=calc_sum)
+
+    """
 
     def __init__(self, computer=None, **kwargs):
         """Constructor
 
         Args:
-            computer (Callable[[value, obj], Any]): Calculate property value from other propery values
+            computer (Callable[[obj], Any]): Calculate property value from other propery values
             **kwargs(optional): Same as :func:`BaseProperty.__init__`
         """
         super().__init__(**kwargs)

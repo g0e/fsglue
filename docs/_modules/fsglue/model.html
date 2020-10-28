@@ -206,7 +206,7 @@
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_fix_up_properties</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">_properties</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="bp">cls</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">prop</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">BaseProperty</span><span class="p">):</span>
                 <span class="n">prop</span><span class="o">.</span><span class="n">_fix_up</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -690,8 +690,8 @@
             <span class="n">props</span><span class="p">[</span><span class="n">prop</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_get_schema</span><span class="p">()</span>
         <span class="n">required</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
         <span class="n">schema</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="n">required</span><span class="p">,</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="n">required</span><span class="p">,</span>
             <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">props</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">return</span> <span class="n">schema</span></div></div>

@@ -245,6 +245,43 @@ room1 = Room.get_by_id("yyy")
 room1.delete_all()  # delete_all() will delete room1 and messages belong to room1
 ```
 
+### Generate JsonSchema
+
+`Room.to_schema()` will generate following JsonSchema definition
+
+```js
+{
+  "type": "object",
+  "required": [
+    "name",
+    "owner"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "number"
+    },
+    "updated_at": {
+      "type": "number"
+    }
+  }
+}
+```
+
 ## Links
 
 - [API Reference](https://g0e.github.io/fsglue/)

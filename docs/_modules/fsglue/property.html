@@ -325,7 +325,7 @@
             <span class="k">raise</span> <span class="n">FsglueValidationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> not found in choices&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">required</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">FsglueValidationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> is required&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">))</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">jsonschema</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">JsonSchemaValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -475,7 +475,66 @@
 
 
 <div class="viewcode-block" id="JsonProperty"><a class="viewcode-back" href="../../property.html#fsglue.property.JsonProperty">[docs]</a><span class="k">class</span> <span class="nc">JsonProperty</span><span class="p">(</span><span class="n">BaseProperty</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Can store dict or list value for application and firestore.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Can store dict or list value for application and firestore.</span>
+<span class="sd">    </span>
+<span class="sd">    Examples:</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import fsglue</span>
+
+<span class="sd">            ITEMS_SCHEMA = {</span>
+<span class="sd">                &quot;type&quot;: &quot;array&quot;,</span>
+<span class="sd">                &quot;minItems&quot;: 1,</span>
+<span class="sd">                &quot;items&quot;: {</span>
+<span class="sd">                    &quot;type&quot;: &quot;object&quot;,</span>
+<span class="sd">                    &quot;required&quot;: [&quot;name&quot;, &quot;price&quot;, &quot;cnt&quot;],</span>
+<span class="sd">                    &quot;additionalProperties&quot;: False,</span>
+<span class="sd">                    &quot;properties&quot;: {</span>
+<span class="sd">                        &quot;name&quot;: {</span>
+<span class="sd">                            &quot;type&quot;: &quot;string&quot;,</span>
+<span class="sd">                        },</span>
+<span class="sd">                        &quot;price&quot;: {</span>
+<span class="sd">                            &quot;type&quot;: &quot;number&quot;,</span>
+<span class="sd">                        },</span>
+<span class="sd">                        &quot;cnt&quot;: {</span>
+<span class="sd">                            &quot;type&quot;: &quot;number&quot;,</span>
+<span class="sd">                        },</span>
+<span class="sd">                    },</span>
+<span class="sd">                },</span>
+<span class="sd">            }</span>
+
+<span class="sd">            COUPON_SCHEMA = {</span>
+<span class="sd">                &quot;type&quot;: &quot;object&quot;,</span>
+<span class="sd">                &quot;additionalProperties&quot;: False,</span>
+<span class="sd">                &quot;required&quot;: [&quot;coupon_id&quot;, &quot;coupon_name&quot;, &quot;condition&quot;],</span>
+<span class="sd">                &quot;properties&quot;: {</span>
+<span class="sd">                    &quot;coupon_id&quot;: {</span>
+<span class="sd">                        &quot;type&quot;: &quot;string&quot;,</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;coupon_name&quot;: {</span>
+<span class="sd">                        &quot;type&quot;: &quot;string&quot;,</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;condition&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;additionalProperties&quot;: True},</span>
+<span class="sd">                },</span>
+<span class="sd">            }</span>
+
+<span class="sd">            class Purchase(fsglue.BaseModel):</span>
+<span class="sd">                COLLECTION_PATH = &quot;purchase&quot;</span>
+<span class="sd">                COLLECTION_PATH_PARAMS = []</span>
+
+<span class="sd">                items = fsglue.JsonProperty(schema=ITEMS_SCHEMA, default=[], required=True)</span>
+<span class="sd">                coupon = fsglue.JsonProperty(schema=COUPON_SCHEMA, default=None)</span>
+
+<span class="sd">            # create</span>
+<span class="sd">            purchase = Purchase.create()</span>
+<span class="sd">            purchase.items = [{&quot;name&quot;: &quot;apple&quot;, &quot;price&quot;: 100, &quot;cnt&quot;: 1}]</span>
+<span class="sd">            purchase.coupon = {</span>
+<span class="sd">                &quot;coupon_id&quot;: &quot;test&quot;,</span>
+<span class="sd">                &quot;coupon_name&quot;: &quot;time sale 10% off&quot;,</span>
+<span class="sd">                &quot;condition&quot;: {&quot;discount_rate&quot;: 0.9},</span>
+<span class="sd">            }</span>
+<span class="sd">            purchase.put()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="JsonProperty.__init__"><a class="viewcode-back" href="../../property.html#fsglue.property.JsonProperty.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store_as_string</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Constructor</span>
@@ -509,13 +568,31 @@
 
 
 <div class="viewcode-block" id="ComputedProperty"><a class="viewcode-back" href="../../property.html#fsglue.property.ComputedProperty">[docs]</a><span class="k">class</span> <span class="nc">ComputedProperty</span><span class="p">(</span><span class="n">BaseProperty</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Can store computed value from other property values.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Can store computed value from other property values.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            import fsglue</span>
+
+<span class="sd">            def calc_sum(obj):</span>
+<span class="sd">                return obj.num1 + obj.num2</span>
+
+<span class="sd">            class TestModel(fsglue.BaseModel):</span>
+<span class="sd">                COLLECTION_PATH = &quot;test&quot;</span>
+<span class="sd">                COLLECTION_PATH_PARAMS = []</span>
+
+<span class="sd">                num1 = fsglue.IntegerProperty(required=True)</span>
+<span class="sd">                num2 = fsglue.IntegerProperty(required=True)</span>
+<span class="sd">                sum = fsglue.ComputedProperty(computer=calc_sum)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="ComputedProperty.__init__"><a class="viewcode-back" href="../../property.html#fsglue.property.ComputedProperty.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">computer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Constructor</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            computer (Callable[[value, obj], Any]): Calculate property value from other propery values</span>
+<span class="sd">            computer (Callable[[obj], Any]): Calculate property value from other propery values</span>
 <span class="sd">            **kwargs(optional): Same as :func:`BaseProperty.__init__`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
