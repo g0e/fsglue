@@ -324,7 +324,7 @@ class TimestampProperty(BaseProperty):
 
 class JsonProperty(BaseProperty):
     """Can store dict or list value for application and firestore.
-    
+
     Examples:
         .. code-block:: python
 
@@ -470,13 +470,14 @@ class ComputedProperty(BaseProperty):
 class ConstantProperty(BaseProperty):
     """Provide constant value for application and firestore"""
 
-    def __init__(self, value=None):
+    def __init__(self, value=None, **kwargs):
         """Constructor
 
         Args:
             value: constant value
+            **kwargs(optional): Same as :func:`BaseProperty.__init__`
         """
-        super().__init__()
+        super().__init__(**kwargs)
         if value is None:
             raise FsglueProgrammingError("value is required")
         self._value = value

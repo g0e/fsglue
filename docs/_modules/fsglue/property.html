@@ -476,7 +476,7 @@
 
 <div class="viewcode-block" id="JsonProperty"><a class="viewcode-back" href="../../property.html#fsglue.property.JsonProperty">[docs]</a><span class="k">class</span> <span class="nc">JsonProperty</span><span class="p">(</span><span class="n">BaseProperty</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Can store dict or list value for application and firestore.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Examples:</span>
 <span class="sd">        .. code-block:: python</span>
 
@@ -622,13 +622,14 @@
 <div class="viewcode-block" id="ConstantProperty"><a class="viewcode-back" href="../../property.html#fsglue.property.ConstantProperty">[docs]</a><span class="k">class</span> <span class="nc">ConstantProperty</span><span class="p">(</span><span class="n">BaseProperty</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Provide constant value for application and firestore&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ConstantProperty.__init__"><a class="viewcode-back" href="../../property.html#fsglue.property.ConstantProperty.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ConstantProperty.__init__"><a class="viewcode-back" href="../../property.html#fsglue.property.ConstantProperty.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Constructor</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            value: constant value</span>
+<span class="sd">            **kwargs(optional): Same as :func:`BaseProperty.__init__`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">FsglueProgrammingError</span><span class="p">(</span><span class="s2">&quot;value is required&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span></div>
