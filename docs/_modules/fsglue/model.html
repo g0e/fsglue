@@ -226,6 +226,11 @@
     <span class="k">def</span> <span class="nf">_get_col_path_by_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">parent_ids</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">COLLECTION_PATH</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">)</span>
 
+<div class="viewcode-block" id="BaseModel.get_client"><a class="viewcode-back" href="../../model.html#fsglue.model.BaseModel.get_client">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_client</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return firestore.Clinet() instance. You can override this method to use another client per model.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_client</span><span class="p">()</span></div>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">doc_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span>
@@ -430,7 +435,7 @@
 <span class="sd">            bool: True if exists else False</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="n">get_client</span><span class="p">()</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span>
             <span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
             <span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
             <span class="o">.</span><span class="n">get</span><span class="p">()</span>
@@ -448,7 +453,7 @@
 <span class="sd">            obj: model instance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">doc</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">get_client</span><span class="p">()</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span>
             <span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
             <span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span>
             <span class="o">.</span><span class="n">get</span><span class="p">()</span>
@@ -471,10 +476,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc_ids</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
-        <span class="n">coll</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
+        <span class="n">coll</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
         <span class="n">doc_refs</span> <span class="o">=</span> <span class="p">[</span><span class="n">coll</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">doc_ids</span><span class="p">]</span>
         <span class="n">objs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">doc_refs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">doc_refs</span><span class="p">):</span>
             <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="o">*</span><span class="n">parent_ids</span><span class="p">)</span>
             <span class="n">obj</span><span class="o">.</span><span class="n">_from_db_dict</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
             <span class="n">objs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
@@ -495,7 +500,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">before_put</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="n">db_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_db_dict</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="n">exclude</span><span class="p">,</span> <span class="n">only</span><span class="o">=</span><span class="n">only</span><span class="p">)</span>
-            <span class="n">coll_ref</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span>
+            <span class="n">coll_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exclude</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">only</span><span class="p">:</span>
                     <span class="n">coll_ref</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">db_dict</span><span class="p">)</span>
@@ -529,7 +534,7 @@
 <div class="viewcode-block" id="BaseModel.delete"><a class="viewcode-back" href="../../model.html#fsglue.model.BaseModel.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Delete document in firestore&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deletable</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">before_delete</span><span class="p">():</span>
-            <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span><span class="o">.</span><span class="n">document</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span><span class="o">.</span><span class="n">document</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span>
             <span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">after_delete</span><span class="p">()</span></div>
@@ -557,7 +562,11 @@
 <div class="viewcode-block" id="BaseModel.delete_all"><a class="viewcode-back" href="../../model.html#fsglue.model.BaseModel.delete_all">[docs]</a>    <span class="k">def</span> <span class="nf">delete_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Delete document and subcollection recursively&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deletable</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">before_delete</span><span class="p">():</span>
-            <span class="n">doc</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">)</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_col_path</span><span class="p">())</span>
+                <span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">)</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_delete_doc_recursive</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">after_delete</span><span class="p">()</span></div>
 
@@ -595,9 +604,9 @@
 
         <span class="k">if</span> <span class="n">collection_id</span><span class="p">:</span>
             <span class="c1"># https://github.com/googleapis/google-cloud-python/blob/4fd18c8aef86c287f50780036c0751f965c6e227/firestore/google/cloud/firestore_v1/client.py#L198</span>
-            <span class="n">docs</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection_group</span><span class="p">(</span><span class="n">collection_id</span><span class="p">)</span>
+            <span class="n">docs</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection_group</span><span class="p">(</span><span class="n">collection_id</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">docs</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
+            <span class="n">docs</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conds</span><span class="p">:</span>
             <span class="n">prop</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">prop</span><span class="p">:</span>
@@ -653,9 +662,9 @@
 <span class="sd">            generator: yield instances of the model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">collection_id</span><span class="p">:</span>
-            <span class="n">docs</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection_group</span><span class="p">(</span><span class="n">collection_id</span><span class="p">)</span>
+            <span class="n">docs</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection_group</span><span class="p">(</span><span class="n">collection_id</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">docs</span> <span class="o">=</span> <span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
+            <span class="n">docs</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_client</span><span class="p">()</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_col_path_by_ids</span><span class="p">(</span><span class="o">*</span><span class="n">parent_ids</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conds</span><span class="p">:</span>
             <span class="n">prop</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">prop</span><span class="p">:</span>

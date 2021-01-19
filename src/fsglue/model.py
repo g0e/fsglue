@@ -74,6 +74,11 @@ class BaseModel(object, metaclass=MetaModel):
     def _get_col_path_by_ids(cls, *parent_ids):
         return cls.COLLECTION_PATH.format(*parent_ids)
 
+    @classmethod
+    def get_client(cls):
+        """Return firestore.Clinet() instance. You can override this method to use another client per model."""
+        return get_client()
+
     @property
     def doc_id(self):
         return self._doc_id
@@ -278,7 +283,7 @@ class BaseModel(object, metaclass=MetaModel):
             bool: True if exists else False
         """
         return (
-            get_client()
+            cls.get_client()
             .collection(cls._get_col_path_by_ids(*parent_ids))
             .document(doc_id)
             .get()
@@ -296,7 +301,7 @@ class BaseModel(object, metaclass=MetaModel):
             obj: model instance
         """
         doc = (
-            get_client()
+            cls.get_client()
             .collection(cls._get_col_path_by_ids(*parent_ids))
             .document(doc_id)
             .get()
@@ -319,10 +324,10 @@ class BaseModel(object, metaclass=MetaModel):
         """
         if len(doc_ids) == 0:
             return []
-        coll = get_client().collection(cls._get_col_path_by_ids(*parent_ids))
+        coll = cls.get_client().collection(cls._get_col_path_by_ids(*parent_ids))
         doc_refs = [coll.document(doc_id) for doc_id in doc_ids]
         objs = []
-        for doc in get_client().get_all(doc_refs):
+        for doc in cls.get_client().get_all(doc_refs):
             obj = cls(doc.id, *parent_ids)
             obj._from_db_dict(doc.to_dict())
             objs.append(obj)
@@ -343,7 +348,7 @@ class BaseModel(object, metaclass=MetaModel):
         self.validate()
         if self.before_put(**kwargs):
             db_dict = self._to_db_dict(exclude=exclude, only=only)
-            coll_ref = get_client().collection(self._get_col_path())
+            coll_ref = self.get_client().collection(self._get_col_path())
             if self._doc_id:
                 if len(exclude) > 0 or only:
                     coll_ref.document(self._doc_id).update(db_dict)
@@ -377,7 +382,7 @@ class BaseModel(object, metaclass=MetaModel):
     def delete(self):
         """Delete document in firestore"""
         if self.is_deletable() and self.before_delete():
-            get_client().collection(self._get_col_path()).document(
+            self.get_client().collection(self._get_col_path()).document(
                 self._doc_id
             ).delete()
             self.after_delete()
@@ -405,7 +410,11 @@ class BaseModel(object, metaclass=MetaModel):
     def delete_all(self):
         """Delete document and subcollection recursively"""
         if self.is_deletable() and self.before_delete():
-            doc = get_client().collection(self._get_col_path()).document(self._doc_id)
+            doc = (
+                self.get_client()
+                .collection(self._get_col_path())
+                .document(self._doc_id)
+            )
             self._delete_doc_recursive(doc)
             self.after_delete()
 
@@ -443,9 +452,9 @@ class BaseModel(object, metaclass=MetaModel):
 
         if collection_id:
             # https://github.com/googleapis/google-cloud-python/blob/4fd18c8aef86c287f50780036c0751f965c6e227/firestore/google/cloud/firestore_v1/client.py#L198
-            docs = get_client().collection_group(collection_id)
+            docs = cls.get_client().collection_group(collection_id)
         else:
-            docs = get_client().collection(cls._get_col_path_by_ids(*parent_ids))
+            docs = cls.get_client().collection(cls._get_col_path_by_ids(*parent_ids))
         for field, operator, value in conds:
             prop = cls._properties.get(field)
             if prop:
@@ -501,9 +510,9 @@ class BaseModel(object, metaclass=MetaModel):
             generator: yield instances of the model
         """
         if collection_id:
-            docs = get_client().collection_group(collection_id)
+            docs = cls.get_client().collection_group(collection_id)
         else:
-            docs = get_client().collection(cls._get_col_path_by_ids(*parent_ids))
+            docs = cls.get_client().collection(cls._get_col_path_by_ids(*parent_ids))
         for field, operator, value in conds:
             prop = cls._properties.get(field)
             if prop:
