@@ -5,12 +5,14 @@ import json
 import copy
 from .exceptions import FsglueProgrammingError, FsglueValidationError
 from enum import Enum
+from typing import Optional, Any, TypeVar, Generic, Union
 
 
 PropertySpecialValue = Enum("PropertySpecialValue", "SET_NOTHING")
+T = TypeVar('T')
 
 
-class BaseProperty(object):
+class BaseProperty(Generic[T]):
     """BasePropety
 
     You can define your CustomProperty by extending this BaseProperty.
@@ -38,17 +40,24 @@ class BaseProperty(object):
                 def get_schema(self):
                     return {"type": "string", "enum": ["Yes", "No"]}
     """
+    _name: Optional[str]
+    required: bool
+    default: Any
+    choices: Optional[list[Any]]
+    schema: Optional[dict]
+    validator: Any
+    is_virtual: bool
 
     _INTACT_PREFIX = "___"
 
     def __init__(
         self,
-        required=False,
-        default=None,
-        choices=None,
-        schema=None,
-        validator=None,
-        is_virtual=False,
+        required: bool = False,
+        default: Any = None,
+        choices: Optional[list[Any]] = None,
+        schema: Optional[dict] = None,
+        validator: Any = None,
+        is_virtual: bool = False,
     ):
         """Constructor
 
@@ -68,20 +77,22 @@ class BaseProperty(object):
         self.validator = validator
         self.is_virtual = is_virtual  # don't save to firestore if True
 
-    def _fix_up(self, cls, name):
+    def _fix_up(self, cls, name: str):
         if self._name is None:
             self._name = name
 
-    def __get__(self, obj, objtype=None):
+    def __get__(self, obj, objtype=None) -> T:
         if obj is None:
-            return self  # __get__ called on class
+            return self  # type: ignore  # __get__ called on class
         return self._get_app_value(obj)
 
-    def __set__(self, obj, value):
+    def __set__(self, obj, value: T):
         self._set_app_value(obj, value)
 
-    def _get_app_value(self, obj, get_intact=False):
+    def _get_app_value(self, obj, get_intact=False) -> T:
         """Get exposed value for application"""
+        if self._name is None:
+            raise Exception("property not fixed")
         if not get_intact:
             v = obj._doc_values.get(self._name)
         else:
@@ -138,6 +149,8 @@ class BaseProperty(object):
     def _set_db_value(self, obj, value):
         """Set firestore value"""
         value = self.from_db_value(value, obj)
+        if self._name is None:
+            raise Exception("property not fixed")
         if not (value == PropertySpecialValue.SET_NOTHING):
             obj._doc_values[self._name] = value
             if isinstance(value, dict) or isinstance(value, list):
@@ -204,7 +217,7 @@ class BaseProperty(object):
         return {}
 
 
-class StringProperty(BaseProperty):
+class StringProperty(BaseProperty[str]):
     def to_app_value(self, value, obj):
         return str(value) if value is not None else None
 
@@ -221,7 +234,7 @@ class StringProperty(BaseProperty):
         return {"type": "string"}
 
 
-class IntegerProperty(BaseProperty):
+class IntegerProperty(BaseProperty[int]):
     def to_app_value(self, value, obj):
         return int(value) if value is not None else None
 
@@ -238,7 +251,7 @@ class IntegerProperty(BaseProperty):
         return {"type": "number"}
 
 
-class FloatProperty(BaseProperty):
+class FloatProperty(BaseProperty[float]):
     def to_app_value(self, value, obj):
         return float(value) if value is not None else None
 
@@ -255,7 +268,7 @@ class FloatProperty(BaseProperty):
         return {"type": "number"}
 
 
-class BooleanProperty(BaseProperty):
+class BooleanProperty(BaseProperty[bool]):
     def to_app_value(self, value, obj):
         return bool(value) if value is not None else None
 
@@ -272,7 +285,7 @@ class BooleanProperty(BaseProperty):
         return {"type": "boolean"}
 
 
-class TimestampProperty(BaseProperty):
+class TimestampProperty(BaseProperty[Union[int, float]]):
     """Provide UTC Timestamp(int) value for application and Date value for firestore"""
 
     def __init__(self, auto_now=False, auto_now_add=False, **kwargs):
@@ -322,7 +335,7 @@ class TimestampProperty(BaseProperty):
         return {"type": "number"}
 
 
-class JsonProperty(BaseProperty):
+class JsonProperty(BaseProperty[T]):
     """Can store dict or list value for application and firestore.
 
     Examples:
@@ -415,7 +428,7 @@ class JsonProperty(BaseProperty):
         return {"type": "object"}
 
 
-class ComputedProperty(BaseProperty):
+class ComputedProperty(BaseProperty[T]):
     """Can store computed value from other property values.
 
     Examples:
@@ -467,7 +480,7 @@ class ComputedProperty(BaseProperty):
         raise FsglueProgrammingError("schema must be specified")
 
 
-class ConstantProperty(BaseProperty):
+class ConstantProperty(BaseProperty[T]):
     """Provide constant value for application and firestore"""
 
     def __init__(self, value=None, **kwargs):

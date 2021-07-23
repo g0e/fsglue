@@ -1,7 +1,7 @@
 import unittest
 import fsglue
 from tests import setup_env  # noqa
-
+from typing import TypedDict, cast
 
 ITEMS_SCHEMA = {
     "type": "array",
@@ -39,13 +39,15 @@ COUPON_SCHEMA = {
     },
 }
 
+Coupon = TypedDict("Coupon", {"coupon_id": str, "coupon_name": str, "condition": dict})
+
 
 class Purchase(fsglue.BaseModel):
     COLLECTION_PATH = "purchase"
     COLLECTION_PATH_PARAMS = []
 
     items = fsglue.JsonProperty(schema=ITEMS_SCHEMA, default=[], required=True)
-    coupon = fsglue.JsonProperty(schema=COUPON_SCHEMA, default=None)
+    coupon = fsglue.JsonProperty[Coupon](schema=COUPON_SCHEMA, default=None)
 
 
 class TestJsonProperty(unittest.TestCase):
@@ -65,15 +67,17 @@ class TestJsonProperty(unittest.TestCase):
         self.assertEqual(len(purchase.items), 1)
         self.assertEqual(purchase.coupon, None)
         purchase = Purchase.get_by_id(purchase.doc_id)
-        with self.assertRaises(fsglue.FsglueValidationError):
-            purchase.coupon = {
+        self.assertIsNotNone(purchase)
+        if purchase:
+            with self.assertRaises(fsglue.FsglueValidationError):
+                purchase.coupon = cast(Coupon, {
+                    "coupon_id": "test",
+                    "coupon_name": "time sale 10% off",
+                    # require condition
+                })
+            purchase.coupon = cast(Coupon, {
                 "coupon_id": "test",
                 "coupon_name": "time sale 10% off",
-                # require condition
-            }
-        purchase.coupon = {
-            "coupon_id": "test",
-            "coupon_name": "time sale 10% off",
-            "condition": {"discount_rate": 0.9},
-        }
-        purchase.put()
+                "condition": {"discount_rate": 0.9},
+            })
+            purchase.put()

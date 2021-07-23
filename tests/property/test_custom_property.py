@@ -53,8 +53,10 @@ class TestYesNoProperty(unittest.TestCase):
         john.is_fine = "Yes"
         john.put()
         john = TestModel.get_by_id(john.doc_id)
-        self.assertEqual(john.is_fine, "Yes")
-        john_dict = john.to_dict()
-        self.assertEqual(john_dict.get("is_fine"), "Yes")
+        self.assertIsNotNone(john)
+        if john:
+            self.assertEqual(john.is_fine, "Yes")
+            john_dict = john.to_dict()
+            self.assertEqual(john_dict.get("is_fine"), "Yes")
         john = TestModel.where([["name", "==", "john"], ["is_fine", "==", "Yes"]])[0]
         self.assertEqual(john.is_fine, "Yes")

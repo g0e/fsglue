@@ -3,12 +3,17 @@ from .client import get_client
 from .exceptions import FsglueValidationError, FsglueDocumentNotFound
 import re
 from .property import BaseProperty
+from typing import TypeVar, Any, Optional, Type
 
 
 class MetaModel(type):
     def __init__(cls, name, bases, classdict):
         super(MetaModel, cls).__init__(name, bases, classdict)
-        cls._fix_up_properties()
+        cls._fix_up_properties()  # type: ignore
+
+
+T = TypeVar('T')
+Model = TypeVar('Model', bound='BaseModel')
 
 
 class BaseModel(object, metaclass=MetaModel):
@@ -45,11 +50,11 @@ class BaseModel(object, metaclass=MetaModel):
 
     """
 
-    COLLECTION_PATH = None  # ex: category/{0}/group/{1}/page
-    COLLECTION_PATH_PARAMS = []  # ex: ["category_id", "group_id"]
-    DICT_ID_KEY = "id"
+    COLLECTION_PATH: str = None  # type: ignore # ex: category/{0}/group/{1}/page
+    COLLECTION_PATH_PARAMS: list[str] = []  # ex: ["category_id", "group_id"]
+    DICT_ID_KEY: str = "id"
     ID_VALIDATION_PATTERN = r"^[a-zA-Z0-9_]+$"
-    _properties = None
+    _properties: dict[str, BaseProperty] = {}
 
     @classmethod
     def _fix_up_properties(cls):
@@ -58,7 +63,8 @@ class BaseModel(object, metaclass=MetaModel):
             prop = getattr(cls, name, None)
             if isinstance(prop, BaseProperty):
                 prop._fix_up(cls, name)
-                cls._properties[prop._name] = prop
+                if prop._name is not None:
+                    cls._properties[prop._name] = prop
 
     def __init__(self, doc_id, *parent_ids):
         self._doc_id = doc_id
@@ -80,10 +86,10 @@ class BaseModel(object, metaclass=MetaModel):
         return get_client()
 
     @property
-    def doc_id(self):
+    def doc_id(self) -> Optional[str]:
         return self._doc_id
 
-    def to_dict(self, get_intact=False):
+    def to_dict(self, get_intact=False) -> dict[str, Any]:
         """Return dict values of instance propeties
 
         Args:
@@ -263,7 +269,7 @@ class BaseModel(object, metaclass=MetaModel):
         for k in self._properties.keys():
             prop = self._properties[k]
             if hasattr(prop, "_get_validate_value"):
-                value = prop._get_validate_value(self)
+                value = prop._get_validate_value(self)  # type: ignore
             else:
                 value = prop._get_app_value(self)
             prop._validate(value, self)
@@ -273,7 +279,7 @@ class BaseModel(object, metaclass=MetaModel):
         pass
 
     @classmethod
-    def exists(cls, doc_id, *parent_ids):
+    def exists(cls, doc_id, *parent_ids) -> bool:
         """Return the document exists or not by doc_id.
 
         Args:
@@ -313,7 +319,7 @@ class BaseModel(object, metaclass=MetaModel):
         return None
 
     @classmethod
-    def get_by_ids(cls, doc_ids, *parent_ids):
+    def get_by_ids(cls: Type[Model], doc_ids, *parent_ids) -> list[Model]:
         """Fetch documents from firestore by doc_ids
 
         Args:
@@ -387,7 +393,7 @@ class BaseModel(object, metaclass=MetaModel):
             ).delete()
             self.after_delete()
 
-    def is_deletable(self):
+    def is_deletable(self) -> bool:
         """Determine whether continue to :func:`delete` or not.
 
         Returns:
@@ -544,7 +550,8 @@ class BaseModel(object, metaclass=MetaModel):
             prop = cls._properties[k]
             if prop.required:
                 required.append(prop._name)
-            props[prop._name] = prop._get_schema()
+            if prop._name:
+                props[prop._name] = prop._get_schema()
         required.sort()
         schema = {
             "type": "object",
