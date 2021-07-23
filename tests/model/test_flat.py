@@ -31,19 +31,23 @@ class TestFruit(unittest.TestCase):
         self.assertEqual(apple.price, 100)
         # read
         fetched_apple = Fruit.get_by_id(apple.doc_id)
-        self.assertEqual(apple.doc_id, fetched_apple.doc_id)
-        self.assertEqual(apple.name, "apple")
-        self.assertEqual(apple.price, 100)
-        # update
-        values = fetched_apple.to_dict()
-        values["price"] = 110
-        Fruit.update_by_dict(values)
-        fetched_apple = Fruit.get_by_id(fetched_apple.doc_id)
-        self.assertEqual(fetched_apple.name, "apple")
-        self.assertEqual(fetched_apple.price, 110)
-        # delete
-        fetched_apple.delete()
-        self.assertEqual(Fruit.exists(fetched_apple.doc_id), False)
+        self.assertIsNotNone(fetched_apple)
+        if fetched_apple:
+            self.assertEqual(apple.doc_id, fetched_apple.doc_id)
+            self.assertEqual(apple.name, "apple")
+            self.assertEqual(apple.price, 100)
+            # update
+            values = fetched_apple.to_dict()
+            values["price"] = 110
+            Fruit.update_by_dict(values)
+            fetched_apple = Fruit.get_by_id(fetched_apple.doc_id)
+            self.assertIsNotNone(fetched_apple)
+            if fetched_apple:
+                self.assertEqual(fetched_apple.name, "apple")
+                self.assertEqual(fetched_apple.price, 110)
+                # delete
+                fetched_apple.delete()
+                self.assertEqual(Fruit.exists(fetched_apple.doc_id), False)
 
     def test_where(self):
         apple = Fruit.create_by_dict(
@@ -84,15 +88,19 @@ class TestFruit(unittest.TestCase):
         fruit.put()
         self.assertNotEqual(fruit.doc_id, None)
         apple = Fruit.get_by_id(fruit.doc_id)
-        self.assertEqual("apple", apple.name)
-        self.assertEqual(123, apple.price)
-        fruit.name = "nice apple"
-        fruit.price = 234
-        fruit.put()
-        nice_apple = Fruit.get_by_id(fruit.doc_id)
-        self.assertEqual("nice apple", nice_apple.name)
-        self.assertEqual(234, nice_apple.price)
-        self.assertEqual(fruit.doc_id, nice_apple.doc_id)
+        self.assertIsNotNone(apple)
+        if apple:
+            self.assertEqual("apple", apple.name)
+            self.assertEqual(123, apple.price)
+            fruit.name = "nice apple"
+            fruit.price = 234
+            fruit.put()
+            nice_apple = Fruit.get_by_id(fruit.doc_id)
+            self.assertIsNotNone(nice_apple)
+            if nice_apple:
+                self.assertEqual("nice apple", nice_apple.name)
+                self.assertEqual(234, nice_apple.price)
+                self.assertEqual(fruit.doc_id, nice_apple.doc_id)
 
     def test_get_by_ids(self):
         apple = Fruit.create_by_dict(
