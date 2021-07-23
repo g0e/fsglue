@@ -5,7 +5,7 @@ import json
 import copy
 from .exceptions import FsglueProgrammingError, FsglueValidationError
 from enum import Enum
-from typing import Optional, Any, TypeVar, Generic, Union
+from typing import Optional, Any, TypeVar, Generic, Union, Sequence
 
 
 PropertySpecialValue = Enum("PropertySpecialValue", "SET_NOTHING")
@@ -43,7 +43,7 @@ class BaseProperty(Generic[T]):
     _name: Optional[str]
     required: bool
     default: Any
-    choices: Optional[list[Any]]
+    choices: Optional[Sequence[Any]]
     schema: Optional[dict]
     validator: Any
     is_virtual: bool
@@ -54,7 +54,7 @@ class BaseProperty(Generic[T]):
         self,
         required: bool = False,
         default: Any = None,
-        choices: Optional[list[Any]] = None,
+        choices: Optional[Sequence[Any]] = None,
         schema: Optional[dict] = None,
         validator: Any = None,
         is_virtual: bool = False,
